@@ -6,7 +6,7 @@ $db = new SQLite3("../clientes/{$pastaHash}/meubanco.sqlite");
 $termo = $_GET['termo'] ?? '';
 $termo = '%' . $termo . '%';
 
-$stmt = $db->prepare("SELECT * FROM leads 
+$stmt = $db->prepare("SELECT * FROM contatos 
                       WHERE nome LIKE :termo OR telefone LIKE :termo 
                          OR email LIKE :termo OR grupoA LIKE :termo 
                       ORDER BY id DESC LIMIT 20");

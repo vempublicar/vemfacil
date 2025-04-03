@@ -1,14 +1,544 @@
-#wrapper {
-    display: flex;
-    min-height: 100vh;
-  }
-  
+/* ===========================================
+   🔁 VARIÁVEIS DE CORES POR PLANO
+=========================================== */
+
+/* 🟢 Plano START */
+.painel.plano-start {
+  --color1: #005101;
+  --color2: #1b6818;
+  --color3: #36802e;
+  --color4: #509745;
+  --color5: #6bae5b;
+  --cor-principal: var(--color5);
+  --cor-secundaria: var(--color3);
+  --cor-texto: #ffffff;
+  --cor-fundo: linear-gradient(130deg, #005101, #36802e);
+  --grafico-cor1: #33aa15;
+  --grafico-cor2: #e2ff04;
+  --grafico-cor3: #7f08ae;
+  --grafico-cor4: #0a4e08;
+  --grafico-cor5: #9ca59c;
+  --grafico-cor6: #0e2208;
+}
+
+/* 🔵 Plano GROWTH */
+.painel.plano-growth {
+  --color1: #cbdad5;
+  --color2: #89a7b1;
+  --color3: #566981;
+  --color4: #3a415a;
+  --color5: #34344e;
+  --cor-principal: var(--color5);
+  --cor-secundaria: var(--color3);
+  --cor-texto: #ffffff;
+  --cor-fundo: linear-gradient(130deg, #34344e, #566981);
+  --grafico-cor1: #00ffaa;
+  --grafico-cor2: #0082ae;
+  --grafico-cor3: #00285a;
+  --grafico-cor4: #111830;
+  --grafico-cor5: #00008a;
+  --grafico-cor6: #c6cbca;
+}
+
+/* ⚫ Plano PRO */
+.painel.plano-pro {
+  --color1: #083557;
+  --color2: #062848;
+  --color3: #041b3a;
+  --color4: #020d2b;
+  --color5: #00001c;
+  --cor-principal: var(--color5);
+  --cor-secundaria: var(--color3);
+  --cor-texto: #ffffff;
+  --cor-fundo: linear-gradient(130deg, #00001c, #041b3a);
+  --grafico-cor1: #93a0ea;
+  --grafico-cor2: #e62cc4;
+  --grafico-cor3: #0695c1;
+  --grafico-cor4: #b5e6f1;
+  --grafico-cor5: #fb6ff2;
+  --grafico-cor6: #06ffe6;
+}
+
+/* 🟣 Plano ELITE */
+.painel.plano-elite {
+  --color1: #5a3758;
+  --color2: #4b2949;
+  --color3: #3d1c3a;
+  --color4: #2e0e2b;
+  --color5: #1f001c;
+  --cor-principal: var(--color5);
+  --cor-secundaria: var(--color3);
+  --cor-texto: #ffffff;
+  --cor-fundo: linear-gradient(130deg, #1f001c, #3d1c3a);
+  --grafico-cor1: #d63384;
+  --grafico-cor2: #b0307d;
+  --grafico-cor3: #9440a1;
+  --grafico-cor4: #6f42c1;
+  --grafico-cor5: #31092a;
+  --grafico-cor6: #9d4edd;
+}
+
+/* ===========================================
+   🔤 TIPOGRAFIA GLOBAL
+=========================================== */
+body {
+  font-family: 'Inter', sans-serif;
+  font-weight: 400;
+  background-color: var(--cor-fundo);
+  color: var(--cor-texto);
+}
+
+h3, h4 {
+  font-weight: 600;
+  color: var(--color1);
+}
+h1, h2 {
+  font-weight: 600;
+  color: var(--cor-texto);
+}
+body.painel {
+  background: var(--cor-fundo) !important;
+  background-attachment: fixed;
+  background-size: cover;
+  background-repeat: no-repeat;
+  color: var(--cor-texto);
+}
+/* Destaque dos títulos no Elite */
+.painel.plano-elite h1,
+.painel.plano-elite h2,
+.painel.plano-elite h3,
+.painel.plano-elite h4 {
+  color: var(--color1);
+}
+
+/* Se quiser aplicar para todos os planos (opcional): */
+.painel h1,
+.painel h2,
+.painel h3,
+.painel h4 {
+  color: var(--cor-texto);
+}
+/* ===========================================
+   🧱 SIDEBAR
+=========================================== */
+#sidebar {
+  width: 250px;
+  min-height: 100vh;
+  background-color: var(--cor-principal);
+  color: #fff;
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.1);
+}
+
+#sidebar h4 {
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  margin: 1.5rem 0;
+  color: #fff;
+}
+
+#sidebar a.nav-link {
+  color: #fff !important;
+  padding: 12px 18px;
+  font-weight: 500;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  transition: background 0.3s;
+}
+
+#sidebar a.nav-link i {
+  margin-right: 10px;
+}
+
+#sidebar a.nav-link:hover {
+  background-color: var(--cor-secundaria);
+}
+
+/* ===========================================
+   🚩 NAVBAR
+=========================================== */
+.navbar {
+  background-color: var(--cor-principal) !important;
+  color: var(--cor-texto);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+.navbar .navbar-text,
+.navbar .text-white,
+.navbar .badge,
+.navbar strong,
+.navbar span {
+  color: #fff !important;
+}
+
+.navbar .badge {
+  background-color: rgba(255, 255, 255, 0.85);
+  color: var(--cor-principal);
+  font-weight: 600;
+}
+
+/* ===========================================
+   📦 BOTÕES
+=========================================== */
+.btn-custom {
+  background-color: var(--cor-principal);
+  color: #fff;
+  border: none;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+
+.btn-custom:hover {
+  background-color: var(--cor-secundaria);
+  color: #fff;
+}
+.btn-custom-secundario {
+  background-color: var(--color1);
+  color: #fff;
+  border: none;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+
+.btn-custom-secundario:hover {
+  background-color: var(--color2);
+  color: #fff;
+}
+.btn-custom-tres {
+  background-color: var(--color4);
+  color: #fff;
+  border: none;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+
+.btn-custom-tres:hover {
+  background-color: var(--color5);
+  color: #fff;
+}
+.btn-custom-quatro {
+  background-color: var(--grafico-cor1);
+  color: #fff;
+  border: none;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+
+.btn-custom-quatro:hover {
+  background-color: var(--grafico-cor2);
+  color: #fff;
+}
+.btn-custom-danger {
+  background-color: #fc3838;
+  color: #fff;
+  border: none;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+
+.btn-custom-danger:hover {
+  background-color: #e82e2e;
+  color: #fff;
+}
+.btn-custom-link {
+  background-color: rgba(0, 0, 0, 0); /* Totalmente transparente */
+  color: #fff;
+  border: none;
+  font-weight: 500;
+  padding: 10px 20px;
+  border-radius: 8px;
+  transition: background 0.3s;
+}
+
+.btn-custom-link:hover {
+  background-color: rgba(19, 19, 19, 0.182); /* Totalmente transparente */
+  color: #fff;
+}
+/* ===========================================
+   🧾 FORMULÁRIOS
+=========================================== */
+input, select, textarea {
+  border: 1px solid var(--cor-secundaria);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background-color: #fff;
+  color: #333;
+}
+
+input:focus, select:focus, textarea:focus {
+  border-color: var(--cor-principal);
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.05);
+  outline: none;
+}
+
+/* ===========================================
+   📊 TABELA MODERNA COM COR SÓLIDA NO CABEÇALHO
+=========================================== */
+.table-rounded {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+
+/* Cabeçalho da tabela com cor sólida */
+.table-rounded thead th {
+  background-color: var(--cor-principal) !important; /* Cor sólida do plano */
+  color: #fff !important;
+  font-weight: 600;
+  padding: 12px;
+  font-size: 0.95rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+/* Cantos arredondados superiores */
+.table-rounded thead th:first-child {
+  border-top-left-radius: 12px;
+}
+
+.table-rounded thead th:last-child {
+  border-top-right-radius: 12px;
+}
+
+/* Células do corpo */
+.table-rounded tbody td {
+  padding: 12px;
+  background-color: #fff;
+  color: #212529;
+  border-bottom: 1px solid #e9ecef;
+  text-align: center;
+  font-size: 0.92rem;
+}
+
+.table-rounded tbody tr:nth-child(even) td {
+  background-color: #f6f6f6;
+}
+
+.table-rounded tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* ===========================================
+   🟢 BADGES DE STATUS
+=========================================== */
+.table-status-badge {
+  padding: 6px 12px;
+  font-size: 0.8rem;
+  border-radius: 999px;
+  font-weight: 500;
+  display: inline-block;
+}
+
+.table-status-badge.andamento {
+  background-color: #ffb300;
+  color: #000;
+}
+
+.table-status-badge.finalizada {
+  background-color: var(--color4);
+  color: #fff;
+}
+
+.table-status-badge.pausada {
+  background-color: #6c757d;
+  color: #fff;
+}
+
+/* ===========================================
+   📊 BARRA DE PROGRESSO
+=========================================== */
+.progress {
+  height: 20px;
+  border-radius: 10px;
+  background-color: #e9ecef;
+  overflow: hidden;
+}
+
+.progress-bar {
+  background-color: var(--cor-principal) !important;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.8rem;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ===========================================
+   🧩 CARDS
+=========================================== */
+.card-custom {
+  background-color: #fff;
+  border: 1px solid var(--cor-secundaria);  
+  border-radius: 12px;
+  padding: 20px;
+  color: var(--cor-principal);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+}
+/* Novo estilo: card-translucent */
+.card-translucent {
+  background-color: rgba(255, 255, 255, 0); /* sutilmente translúcido */
+  border: 1px;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+
+/* ===========================================
+   🪟 MODAL
+=========================================== */
+.modal-content {
+  border-radius: 12px;
+  border: 1px solid var(--cor-principal);
+}
+
+.modal-header, .modal-footer {
+  background-color: var(--cor-principal);
+  color: #fff;
+}
+
+.modal-body {
+  background-color: #fff;
+  color: #333;
+}
+
+/* ===========================================
+   📱 RESPONSIVO
+=========================================== */
+@media (max-width: 768px) {
   #sidebar {
-    width: 250px;
-    min-height: 100vh;
+    width: 100%;
+    position: relative;
   }
-  
-  #main-content {
-    flex: 1;
-    background-color: #f8f9fa;
+
+  .table-rounded thead th,
+  .table-rounded tbody td {
+    font-size: 0.85rem;
+    padding: 8px;
   }
+
+  .btn-custom {
+    width: 100%;
+  }
+}
+/* ===========================================
+   📄 MAIN CONTENT
+=========================================== */
+#main-content {
+  flex: 1;
+  background-color: transparent;
+}
+
+/* ===========================================
+   💬 BALÕES DE MENSAGEM (CHAT)
+=========================================== */
+.balao {
+  max-width: 75%;
+  padding: 10px 15px;
+  border-radius: 20px;
+  margin-bottom: 8px;
+  position: relative;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+  font-size: 0.9rem;
+  line-height: 1.4;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.balao.esquerda {
+  background-color: #f1f1f1;
+  color: #000;
+  align-self: flex-start;
+  border-bottom-left-radius: 0;
+}
+
+.balao.direita {
+  background-color: var(--cor-principal); /* se adapta ao plano */
+  color: #fff;
+  align-self: flex-end;
+  border-bottom-right-radius: 0;
+}
+
+.mensagem {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ===========================================
+   🖱️ SCROLL PERSONALIZADO (horizontal/etapas)
+=========================================== */
+.etapas-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cor-secundaria) #f1f1f1;
+}
+
+.etapas-scroll::-webkit-scrollbar {
+  height: 10px;
+}
+
+.etapas-scroll::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+.etapas-scroll::-webkit-scrollbar-thumb {
+  background: var(--cor-secundaria);
+  border-radius: 10px;
+  border: 2px solid #f1f1f1;
+}
+
+.etapas-scroll::-webkit-scrollbar-thumb:hover {
+  background: var(--cor-principal);
+}
+/* ===========================================
+   📏 AJUSTES DA NAVBAR
+=========================================== */
+.navbar-ajustada {
+  margin-left: -12px;
+  margin-right: -12px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+/* Container com rolagem vertical */
+.scroll-wrapper {
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 10px;
+  border-radius: 8px;
+}
+
+/* Scrollbar moderna */
+.scroll-wrapper::-webkit-scrollbar {
+  width: 8px;
+}
+.scroll-wrapper::-webkit-scrollbar-track {
+  background: transparent;
+}
+.scroll-wrapper::-webkit-scrollbar-thumb {
+  background: var(--cor-secundaria);
+  border-radius: 8px;
+}
+.scroll-wrapper::-webkit-scrollbar-thumb:hover {
+  background: var(--cor-principal);
+}
+
+/* Firefox */
+.scroll-wrapper {
+  scrollbar-width: thin;
+  scrollbar-color: var(--cor-principal);
+}

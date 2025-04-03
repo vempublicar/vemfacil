@@ -1,7 +1,14 @@
 <?php
 session_start();
 $config = require 'api.php';
-$db = new SQLite3('../clientes/meubanco.sqlite');
+
+if (!isset($_SESSION['email'])) {
+  die("Sessão expirada.");
+}
+
+$pastaHash = sha1($_SESSION['email']);
+$caminhoBanco = "../clientes/{$pastaHash}/meubanco.sqlite";
+$db = new SQLite3($caminhoBanco);
 
 $instance = $_POST['instance'] ?? '';
 $number = $_POST['number'] ?? '';
@@ -9,6 +16,9 @@ $number = $_POST['number'] ?? '';
 if (!$instance || !$number) {
   die("Dados inválidos.");
 }
+
+// Monta a URL do webhook com base no hash da pasta do cliente
+$webhookUrl = "https://app.vemfacil.com/webhook&client={$pastaHash}";
 
 $url = $config['base_url'] . $config['endpoints']['create_instance'];
 
@@ -25,6 +35,16 @@ $data = [
     'readMessages' => false,
     'readStatus' => false,
     'syncFullHistory' => false
+  ],
+  'webhook' => [
+    'url' => $webhookUrl,
+    'byEvents' => true,
+    'base64' => true,
+    'headers' => [
+      'Authorization' => 'Bearer ' . $config['apikey'],
+      'Content-Type' => 'application/json'
+    ],
+    'events' => ['MESSAGES_UPSERT'] // Evento mais importante
   ]
 ];
 
