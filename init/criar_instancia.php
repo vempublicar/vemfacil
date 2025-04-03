@@ -63,7 +63,8 @@ $context = stream_context_create($options);
 $result = file_get_contents($url, false, $context);
 
 if ($result === false) {
-  die('Erro ao criar instância.');
+  $_SESSION['mensagem'] = 'Erro ao criar a instância.';
+  header("Location: ../painel&loc=conexao");
 }
 
 $db->exec("UPDATE conexao SET status = 'criada' WHERE instance_name = '$instance'");

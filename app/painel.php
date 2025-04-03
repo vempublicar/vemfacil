@@ -13,8 +13,6 @@ $planoUsuario = $_GET['p'] ?? 'pro'; // Ex: 'elite', 'start', etc.
     <!-- Ícones (opcional) -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <!-- Estilo personalizado -->
     <link rel="stylesheet" href="assets/style.css">
@@ -39,7 +37,7 @@ $planoUsuario = $_GET['p'] ?? 'pro'; // Ex: 'elite', 'start', etc.
                     <a class="nav-link text-white" href="painel&loc=grafico">
                         <i class="bi bi-bar-chart"></i> Indicadores
                     </a>
-                </li>                
+                </li>
                 <li class="nav-item">
                     <a class="nav-link text-white" href="painel&loc=crm">
                         <i class="bi bi-card-list"></i> CRM
@@ -100,7 +98,11 @@ $planoUsuario = $_GET['p'] ?? 'pro'; // Ex: 'elite', 'start', etc.
             $instanciaAtiva = $_SESSION['instancia_ativa'] ?? null;
             $estadoInstancia = json_decode($_SESSION['instancia_valida'] ?? '{}', true);
             $instanciaConectada = ($estadoInstancia['state'] ?? '') === 'OPEN';
-            if($estadoInstancia['state'] == 'OPEN'){$cor = 'success';}else{$cor = 'danger';}
+            if ($estadoInstancia['state'] == 'OPEN') {
+                $cor = 'success';
+            } else {
+                $cor = 'danger';
+            }
             ?>
 
             <nav class="navbar navbar-ajustada mb-4 pt-0 pb-0">
