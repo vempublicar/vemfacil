@@ -1,10 +1,15 @@
-<?php
+<?php 
 // Verifica se foi enviado o client
-$hash = $_GET['client'] ?? null;
-if (!$hash || !preg_match('/^[a-f0-9]{40}$/', $hash)) {
+$clientParam = $_GET['client'] ?? null;
+// Se houver uma barra ("/"), extrai somente a parte antes dela
+if ($clientParam && strpos($clientParam, '/') !== false) {
+    $clientParam = explode('/', $clientParam)[0];
+}
+if (!$clientParam || !preg_match('/^[a-f0-9]{40}$/', $clientParam)) {
     echo json_encode(['erro' => 'Cliente inválido.']);
     exit;
 }
+$hash = $clientParam;
 
 $caminhoBanco = "clientes/{$hash}/meubanco.sqlite";
 if (!file_exists($caminhoBanco)) {
@@ -12,19 +17,16 @@ if (!file_exists($caminhoBanco)) {
     exit;
 }
 
-// Connect with Write-Ahead Logging for better concurrency
+// Conecta com o SQLite utilizando Write-Ahead Logging para melhor concorrência
 $db = new SQLite3($caminhoBanco);
 $db->exec('PRAGMA journal_mode = WAL');
 $db->exec('PRAGMA synchronous = NORMAL');
-
-// Inicializa tabelas e índices
-initDatabase($db);
 
 // Captura o corpo do POST
 $input = file_get_contents('php://input');
 $decoded = json_decode($input, true);
 
-// Ajuste: se vier como array (como no Postman), extrai o objeto principal
+// Ajuste: se vier como array (ex.: Postman), extrai o objeto principal
 $body = isset($decoded[0]['body']) ? $decoded[0]['body'] : $decoded;
 
 if (!$body || !isset($body['event']) || $body['event'] !== 'messages.upsert') {
@@ -36,86 +38,134 @@ $data = $body['data'] ?? [];
 $fromMe = $data['key']['fromMe'] ?? true;
 $numeroRaw = $data['key']['remoteJid'] ?? '';
 
-if ($fromMe || !$numeroRaw || !str_contains($numeroRaw, '@s.whatsapp.net')) {
+if ($fromMe || !$numeroRaw || strpos($numeroRaw, '@s.whatsapp.net') === false) {
     echo json_encode(['status' => 'Ignorado']);
     exit;
 }
 
-// Extrai o número puro
+// Extrai o número puro e os demais dados
 $numero = str_replace('@s.whatsapp.net', '', $numeroRaw);
 $mensagem = $data['message']['conversation'] ?? '';
 $nome = $data['pushName'] ?? '';
 
-// Start transaction for all database operations
+// Define a pasta onde o JSON será salvo
+$baseDir = "clientes/{$hash}/mensagens/";
+if (!is_dir($baseDir)) {
+    mkdir($baseDir, 0777, true);
+}
+
+// Inicia a transação do banco
 $db->exec('BEGIN TRANSACTION');
 
 try {
-    // Registra no log de webhook
-    $logStmt = $db->prepare("INSERT INTO logs_webhook (tipo, numero, mensagem) VALUES ('recebida', ?, ?)");
-    $logStmt->bindValue(1, $numero);
-    $logStmt->bindValue(2, $mensagem);
-    $logStmt->execute();
+    // Registra o log da mensagem
+    $stmt = $db->prepare("INSERT INTO logs_webhook (tipo, numero, mensagem) VALUES ('recebida', ?, ?)");
+    $stmt->bindValue(1, $numero);
+    $stmt->bindValue(2, $mensagem);
+    $stmt->execute();
 
-    // Verifica e atualiza contatos
-    $checkContact = $db->prepare("SELECT id FROM contatos WHERE telefone = ?");
-    $checkContact->bindValue(1, $numero);
-    $contactExists = $checkContact->execute()->fetchArray(SQLITE3_ASSOC);
+    // Verifica se já existe o contato
+    $check = $db->prepare("SELECT id FROM contatos WHERE telefone = ?");
+    $check->bindValue(1, $numero);
+    $existe = $check->execute()->fetchArray(SQLITE3_ASSOC);
 
-    if ($contactExists) {
-        $updateContact = $db->prepare("UPDATE contatos SET ultima_mensagem = datetime('now'), notifica = COALESCE(notifica, 0) + 1 WHERE telefone = ?");
-        $updateContact->bindValue(1, $numero);
-        $updateContact->execute();
+    if ($existe) {
+        // Atualiza contato existente
+        $hasUltimaMsg = false;
+        $columns = $db->query("PRAGMA table_info(contatos)");
+        while ($column = $columns->fetchArray(SQLITE3_ASSOC)) {
+            if ($column['name'] === 'ultima_mensagem') {
+                $hasUltimaMsg = true;
+                break;
+            }
+        }
+    
+        if ($hasUltimaMsg) {
+            $update = $db->prepare("UPDATE contatos SET notifica = COALESCE(notifica, 0) + 1, ultima_mensagem = datetime('now') WHERE telefone = ?");
+        } else {
+            $update = $db->prepare("UPDATE contatos SET notifica = COALESCE(notifica, 0) + 1 WHERE telefone = ?");
+        }
+    
+        $update->bindValue(1, $numero);
+        $update->execute();
     } else {
-        // Se não existir, cria um novo contato
-        $insertContact = $db->prepare("INSERT INTO contatos (telefone, nome, notifica, ultima_mensagem) VALUES (?, ?, 1, datetime('now'))");
-        $insertContact->bindValue(1, $numero);
-        $insertContact->bindValue(2, $nome);
-        $insertContact->execute();
+        // Verifica se o contato está na tabela leads
+        $verificaLead = $db->prepare("SELECT id FROM leads WHERE telefone = ?");
+        $verificaLead->bindValue(1, $numero);
+        $leadExiste = $verificaLead->execute()->fetchArray(SQLITE3_ASSOC);
+    
+        if ($leadExiste) {
+            // Adiciona na tabela contatos vindo de lead
+            $insereContato = $db->prepare("INSERT INTO contatos (telefone, nome, etiqueta, grupoC, notifica, data_criacao, ultima_mensagem) 
+                                           VALUES (?, ?, 'Base', 'lead', 1, datetime('now'), datetime('now'))");
+            $insereContato->bindValue(1, $numero);
+            $insereContato->bindValue(2, $nome);
+            $insereContato->execute();
+    
+            // Atualiza o lead como convertido
+            $atualizaLead = $db->prepare("UPDATE leads SET etiqueta = 'contato', data_resposta = datetime('now') WHERE id = ?");
+            $atualizaLead->bindValue(1, $leadExiste['id']);
+            $atualizaLead->execute();
+        } else {
+            // Adiciona novo contato padrão
+            $insere = $db->prepare("INSERT INTO contatos (telefone, nome, etiqueta, grupoC, notifica, data_criacao, ultima_mensagem) 
+                                    VALUES (?, ?, 'Base', 'whatsapp', 1, datetime('now'), datetime('now'))");
+            $insere->bindValue(1, $numero);
+            $insere->bindValue(2, $nome);
+            $insere->execute();
+        }
     }
 
-    // Gerar caminho para o arquivo JSON
+    // Em vez de salvar a mensagem no banco, salva em um arquivo JSON
     $numeroCriptografado = hash('sha256', $numero);
-    $jsonPath = "clientes/{$hash}/mensagens/{$numeroCriptografado}.json";
-
-    // Adiciona a mensagem recebida ao arquivo JSON
+    $jsonPath = $baseDir . $numeroCriptografado . ".json";
     adicionarMensagemAoJson($jsonPath, $numero, $mensagem);
 
-    // Commit all changes
+    // Commit das alterações no banco
     $db->exec('COMMIT');
     
     echo json_encode(['status' => 'Mensagem processada']);
 } catch (Exception $e) {
-    // Rollback on error
+    // Rollback em caso de erro
     $db->exec('ROLLBACK');
     echo json_encode(['erro' => 'Erro ao processar mensagem: ' . $e->getMessage()]);
 } finally {
-    // Ensure database connection is closed
+    // Encerra a conexão com o banco
     $db->close();
 }
-
 exit;
 
-// Função para adicionar mensagens ao JSON
+/**
+ * Função para adicionar a mensagem ao arquivo JSON.
+ * Se o arquivo não existir, cria a estrutura inicial.
+ */
 function adicionarMensagemAoJson($path, $numero, $mensagem) {
     if (!file_exists($path)) {
         $dados = ['mensagens' => []];
     } else {
         $conteudoAtual = file_get_contents($path);
         $dados = json_decode($conteudoAtual, true);
+        if (!$dados) {
+            $dados = ['mensagens' => []];
+        }
     }
 
     $dados['mensagens'][] = [
-        'numero' => $numero,
-        'mensagem' => $mensagem,
-        'horario' => date('c'),
-        'tipo' => 'recebida'
+        'numero'    => $numero,
+        'mensagem'  => $mensagem,
+        'horario'   => date('c'),
+        'tipo'      => 'recebida'
     ];
 
     file_put_contents($path, json_encode($dados));
 }
-// Function to initialize database with proper structure and indexes
+
+/**
+ * Função para inicializar o banco de dados com a estrutura e índices corretos.
+ * (Caso seja necessário utilizar em futuras implementações)
+ */
 function initDatabase($db) {
-    // Verificar se precisamos adicionar a coluna ultima_mensagem à tabela contatos
+    // Verifica se a coluna 'ultima_mensagem' existe na tabela contatos
     $columns = $db->query("PRAGMA table_info(contatos)");
     $hasUltimaMsg = false;
     
@@ -127,17 +177,16 @@ function initDatabase($db) {
             }
         }
         
-        // Adicionar a coluna se ela não existir
         if (!$hasUltimaMsg) {
             try {
                 $db->exec("ALTER TABLE contatos ADD COLUMN ultima_mensagem TEXT");
             } catch (Exception $e) {
-                // Se a tabela não existir ainda, isso será ignorado
+                // Ignora caso a tabela ainda não exista
             }
         }
     }
     
-    // Cria a tabela de logs com índice
+    // Cria a tabela de logs e índices
     $db->exec("CREATE TABLE IF NOT EXISTS logs_webhook (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         tipo TEXT,
@@ -145,12 +194,10 @@ function initDatabase($db) {
         mensagem TEXT,
         data_hora TEXT DEFAULT CURRENT_TIMESTAMP
     )");
-    
-    // Add index on numero for logs (if it's frequently queried)
     $db->exec("CREATE INDEX IF NOT EXISTS idx_logs_numero ON logs_webhook(numero)");
     $db->exec("CREATE INDEX IF NOT EXISTS idx_logs_data ON logs_webhook(data_hora)");
     
-    // Make sure contatos table exists with proper structure
+    // Cria a tabela de contatos e índice
     $db->exec("CREATE TABLE IF NOT EXISTS contatos (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         telefone TEXT UNIQUE,
@@ -160,5 +207,7 @@ function initDatabase($db) {
         notifica INTEGER DEFAULT 0,
         data_criacao TEXT
     )");
-    
+    $db->exec("CREATE INDEX IF NOT EXISTS idx_contatos_telefone ON contatos(telefone)");
+ 
+   
 }
