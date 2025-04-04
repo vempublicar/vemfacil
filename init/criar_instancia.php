@@ -18,7 +18,7 @@ if (!$instance || !$number) {
 }
 
 // Monta a URL do webhook com base no hash da pasta do cliente
-$webhookUrl = "https://app.vemfacil.com/webhook&client={$pastaHash}";
+$webhookUrl = "https://app.vemfacil.com.br/webhook&client={$pastaHash}";
 
 $url = $config['base_url'] . $config['endpoints']['create_instance'];
 
