@@ -1,5 +1,10 @@
 <?php
-function badgeStatusCRM(array $contato): string {
+function badgeStatusCRM($contato): string {
+    // Verifica se $contato é um array e tem pelo menos um elemento
+    if (!is_array($contato) || empty($contato)) {
+        // return 'Dados inválidos!';
+    }
+
     $html = '<div class="mt-2 d-flex flex-wrap gap-1">';
 
     // STATUS
