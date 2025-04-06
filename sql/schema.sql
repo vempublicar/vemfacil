@@ -30,9 +30,10 @@ CREATE TABLE IF NOT EXISTS contatos (
   grupoB TEXT,
   grupoC TEXT,
   notifica TEXT,
+  arquivo_extra TEXT,
+  gpt BOOLEAN,  
   ultima_mensagem TEXT
 );
-
 
 CREATE TABLE IF NOT EXISTS leads (
   id INTEGER PRIMARY KEY AUTOINCREMENT,

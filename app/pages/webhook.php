@@ -50,69 +50,35 @@ $nome = $data['pushName'] ?? '';
 $db->exec('BEGIN TRANSACTION');
 
 try {
-    // Registra no log
-    $stmt = $db->prepare("INSERT INTO logs_webhook (tipo, numero, mensagem) VALUES ('recebida', ?, ?)");
-    $stmt->bindValue(1, $numero);
-    $stmt->bindValue(2, $mensagem);
-    $stmt->execute();
+    // Registra no log de webhook
+    $logStmt = $db->prepare("INSERT INTO logs_webhook (tipo, numero, mensagem) VALUES ('recebida', ?, ?)");
+    $logStmt->bindValue(1, $numero);
+    $logStmt->bindValue(2, $mensagem);
+    $logStmt->execute();
 
-    // Verifica se já existe contato
-    $check = $db->prepare("SELECT id FROM contatos WHERE telefone = ?");
-    $check->bindValue(1, $numero);
-    $existe = $check->execute()->fetchArray(SQLITE3_ASSOC);
+    // Verifica e atualiza contatos
+    $checkContact = $db->prepare("SELECT id FROM contatos WHERE telefone = ?");
+    $checkContact->bindValue(1, $numero);
+    $contactExists = $checkContact->execute()->fetchArray(SQLITE3_ASSOC);
 
-    if ($existe) {
-        // Atualiza contato existente
-        $hasUltimaMsg = false;
-        $columns = $db->query("PRAGMA table_info(contatos)");
-        while ($column = $columns->fetchArray(SQLITE3_ASSOC)) {
-            if ($column['name'] === 'ultima_mensagem') {
-                $hasUltimaMsg = true;
-                break;
-            }
-        }
-    
-        if ($hasUltimaMsg) {
-            $update = $db->prepare("UPDATE contatos SET notifica = COALESCE(notifica, 0) + 1, ultima_mensagem = datetime('now') WHERE telefone = ?");
-        } else {
-            $update = $db->prepare("UPDATE contatos SET notifica = COALESCE(notifica, 0) + 1 WHERE telefone = ?");
-        }
-    
-        $update->bindValue(1, $numero);
-        $update->execute();
+    if ($contactExists) {
+        $updateContact = $db->prepare("UPDATE contatos SET ultima_mensagem = datetime('now'), notifica = COALESCE(notifica, 0) + 1 WHERE telefone = ?");
+        $updateContact->bindValue(1, $numero);
+        $updateContact->execute();
     } else {
-        // Verifica se está na tabela leads
-        $verificaLead = $db->prepare("SELECT id FROM leads WHERE telefone = ?");
-        $verificaLead->bindValue(1, $numero);
-        $leadExiste = $verificaLead->execute()->fetchArray(SQLITE3_ASSOC);
-    
-        if ($leadExiste) {
-            // Adiciona na tabela contatos vindo de lead
-            $insereContato = $db->prepare("INSERT INTO contatos (telefone, nome, etiqueta, grupoC, notifica, data_criacao, ultima_mensagem) 
-                                           VALUES (?, ?, 'Base', 'lead', 1, datetime('now'), datetime('now'))");
-            $insereContato->bindValue(1, $numero);
-            $insereContato->bindValue(2, $nome);
-            $insereContato->execute();
-    
-            // Atualiza o lead como convertido
-            $atualizaLead = $db->prepare("UPDATE leads SET etiqueta = 'contato', data_resposta = datetime('now') WHERE id = ?");
-            $atualizaLead->bindValue(1, $leadExiste['id']);
-            $atualizaLead->execute();
-        } else {
-            // Adiciona novo contato padrão
-            $insere = $db->prepare("INSERT INTO contatos (telefone, nome, etiqueta, grupoC, notifica, data_criacao, ultima_mensagem) 
-                                    VALUES (?, ?, 'Base', 'whatsapp', 1, datetime('now'), datetime('now'))");
-            $insere->bindValue(1, $numero);
-            $insere->bindValue(2, $nome);
-            $insere->execute();
-        }
+        // Se não existir, cria um novo contato
+        $insertContact = $db->prepare("INSERT INTO contatos (telefone, nome, notifica, ultima_mensagem) VALUES (?, ?, 1, datetime('now'))");
+        $insertContact->bindValue(1, $numero);
+        $insertContact->bindValue(2, $nome);
+        $insertContact->execute();
     }
 
-    // Salva a mensagem recebida
-    $insertMsg = $db->prepare("INSERT INTO mensagens (numero, mensagem, tipo) VALUES (?, ?, 'recebida')");
-    $insertMsg->bindValue(1, $numero);
-    $insertMsg->bindValue(2, $mensagem);
-    $insertMsg->execute();
+    // Gerar caminho para o arquivo JSON
+    $numeroCriptografado = hash('sha256', $numero);
+    $jsonPath = "clientes/{$hash}/mensagens/{$numeroCriptografado}.json";
+
+    // Adiciona a mensagem recebida ao arquivo JSON
+    adicionarMensagemAoJson($jsonPath, $numero, $mensagem);
 
     // Commit all changes
     $db->exec('COMMIT');
@@ -126,8 +92,27 @@ try {
     // Ensure database connection is closed
     $db->close();
 }
+
 exit;
 
+// Função para adicionar mensagens ao JSON
+function adicionarMensagemAoJson($path, $numero, $mensagem) {
+    if (!file_exists($path)) {
+        $dados = ['mensagens' => []];
+    } else {
+        $conteudoAtual = file_get_contents($path);
+        $dados = json_decode($conteudoAtual, true);
+    }
+
+    $dados['mensagens'][] = [
+        'numero' => $numero,
+        'mensagem' => $mensagem,
+        'horario' => date('c'),
+        'tipo' => 'recebida'
+    ];
+
+    file_put_contents($path, json_encode($dados));
+}
 // Function to initialize database with proper structure and indexes
 function initDatabase($db) {
     // Verificar se precisamos adicionar a coluna ultima_mensagem à tabela contatos
@@ -176,21 +161,4 @@ function initDatabase($db) {
         data_criacao TEXT
     )");
     
-   
-    // Add index on telefone (if not already created by UNIQUE constraint)
-    $db->exec("CREATE INDEX IF NOT EXISTS idx_contatos_telefone ON contatos(telefone)");
-    
-    // Cria a tabela de mensagens com índices apropriados
-    $db->exec("CREATE TABLE IF NOT EXISTS mensagens (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        numero TEXT,
-        mensagem TEXT,
-        tipo TEXT, -- enviada | recebida
-        data_hora TEXT DEFAULT CURRENT_TIMESTAMP
-    )");
-    
-    // Add indexes for faster message retrieval
-    $db->exec("CREATE INDEX IF NOT EXISTS idx_mensagens_numero ON mensagens(numero)");
-    $db->exec("CREATE INDEX IF NOT EXISTS idx_mensagens_data ON mensagens(data_hora)");
-    $db->exec("CREATE INDEX IF NOT EXISTS idx_mensagens_tipo ON mensagens(tipo)");
 }

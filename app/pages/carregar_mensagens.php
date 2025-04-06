@@ -28,26 +28,19 @@ if (!$contato) {
 
 $numero = $contato['telefone'];
 
-// Cria a tabela de mensagens se não existir
-$db->exec("CREATE TABLE IF NOT EXISTS mensagens (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    numero TEXT,
-    mensagem TEXT,
-    tipo TEXT, -- enviada | recebida
-    data_hora TEXT DEFAULT CURRENT_TIMESTAMP
-)");
+// Gera o hash do número para localizar o arquivo JSON
+$numeroCriptografado = hash('sha256', $numero);
+$jsonPath = "clientes/{$pastaHash}/mensagens/{$numeroCriptografado}.json";
 
-$stmt = $db->prepare("SELECT * FROM mensagens WHERE numero = ? ORDER BY data_hora DESC LIMIT 20");
-$stmt->bindValue(1, $numero);
-$res = $stmt->execute();
-
-$mensagens = [];
-while ($msg = $res->fetchArray(SQLITE3_ASSOC)) {
-    $mensagens[] = $msg;
+// Carrega as mensagens do arquivo JSON
+if (file_exists($jsonPath)) {
+    $jsonData = file_get_contents($jsonPath);
+    $mensagens = json_decode($jsonData, true)['mensagens'] ?? [];
+    // Inverte para exibir da mais antiga para a mais nova
+    $mensagens = array_reverse($mensagens);
+} else {
+    $mensagens = []; // Nenhuma mensagem encontrada
 }
-
-// Invertemos para exibir da mais antiga para a mais nova
-$mensagens = array_reverse($mensagens);
 
 header('Content-Type: application/json');
 echo json_encode($mensagens);
