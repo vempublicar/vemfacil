@@ -1,45 +1,59 @@
 <?php
 function badgeStatusCRM($contato): string {
-    // Verifica se $contato é um array e tem pelo menos um elemento
     if (!is_array($contato) || empty($contato)) {
-        // return 'Dados inválidos!';
+        return 'Dados inválidos!';
     }
 
     $html = '<div class="mt-2 d-flex flex-wrap gap-1">';
 
     // STATUS
     $status = strtolower($contato['status'] ?? '');
-    $iconeStatus = match ($status) {
-        'lead'    => 'bi-person-plus',
-        'pago'    => 'bi-check-circle-fill',
-        'vencido' => 'bi-x-circle-fill',
-        default   => 'bi-info-circle'
-    };
-    $corStatus = match ($status) {
-        'lead'    => 'text-primary',
-        'pago'    => 'text-success',
-        'vencido' => 'text-danger',
-        default   => 'text-muted'
-    };
+    $iconeStatus = 'bi-info-circle'; // Default
+    $corStatus = 'text-muted'; // Default
+
+    // Substitui o 'match' por 'switch' ou 'if'
+    switch ($status) {
+        case 'lead':
+            $iconeStatus = 'bi-person-plus';
+            $corStatus = 'text-primary';
+            break;
+        case 'pago':
+            $iconeStatus = 'bi-check-circle-fill';
+            $corStatus = 'text-success';
+            break;
+        case 'vencido':
+            $iconeStatus = 'bi-x-circle-fill';
+            $corStatus = 'text-danger';
+            break;
+    }
+
     $html .= "<span class='badge border {$corStatus}'><i class='bi {$iconeStatus} me-1' data-bs-toggle='tooltip' title='Status: " . ucfirst($status) . "'></i> " . ucfirst($status) . "</span>";
 
     // PRIORIDADE
     if (!empty($contato['prioridade'])) {
         $prioridade = strtolower($contato['prioridade']);
-        $iconePrioridade = match ($prioridade) {
-            'crítica' => 'bi-exclamation-triangle-fill',
-            'alta'    => 'bi-fire',
-            'média'   => 'bi-hourglass-split',
-            'baixa'   => 'bi-check2-circle',
-            default   => 'bi-flag'
-        };
-        $corPrioridade = match ($prioridade) {
-            'crítica' => 'text-danger',
-            'alta'    => 'text-warning',
-            'média'   => 'text-primary',
-            'baixa'   => 'text-muted',
-            default   => 'text-secondary'
-        };
+        $iconePrioridade = 'bi-flag'; // Default
+        $corPrioridade = 'text-secondary'; // Default
+
+        switch ($prioridade) {
+            case 'crítica':
+                $iconePrioridade = 'bi-exclamation-triangle-fill';
+                $corPrioridade = 'text-danger';
+                break;
+            case 'alta':
+                $iconePrioridade = 'bi-fire';
+                $corPrioridade = 'text-warning';
+                break;
+            case 'média':
+                $iconePrioridade = 'bi-hourglass-split';
+                $corPrioridade = 'text-primary';
+                break;
+            case 'baixa':
+                $iconePrioridade = 'bi-check2-circle';
+                $corPrioridade = 'text-muted';
+                break;
+        }
+
         $html .= "<span class='badge border {$corPrioridade}'><i class='bi {$iconePrioridade}' data-bs-toggle='tooltip' title='Prioridade: " . ucfirst($prioridade) . "'></i></span>";
     }
 
